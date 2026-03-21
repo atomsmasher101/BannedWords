@@ -1,0 +1,110 @@
+@import url('https://fonts.googleapis.com/css2?family=Russo+One&family=Orbitron:wght@700&display=swap');
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background: transparent;
+    font-family: 'Russo One', sans-serif;
+    overflow: hidden;
+    width: 800px;
+    height: 400px;
+}
+
+.container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    padding: 20px;
+}
+
+.title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 32px;
+    color: #ff4444;
+    text-shadow: 0 0 10px #ff0000, 0 0 20px #ff0000;
+    margin-bottom: 30px;
+    letter-spacing: 4px;
+    animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.8; }
+}
+
+.words-container {
+    display: flex;
+    gap: 30px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.word-card {
+    background: linear-gradient(145deg, #1a1a2e, #16213e);
+    border: 3px solid #0f3460;
+    border-radius: 15px;
+    padding: 20px 35px;
+    text-align: center;
+    min-width: 150px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255,255,255,0.1);
+}
+
+.word-card.highlight {
+    border-color: #ff4444;
+    box-shadow: 0 0 30px rgba(255, 68, 68, 0.5);
+}
+
+.word-card.animating {
+    animation: pop 0.3s ease-out;
+}
+
+@keyframes pop {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.15); }
+    100% { transform: scale(1); }
+}
+
+.word-text {
+    font-size: 28px;
+    color: #e94560;
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    margin-bottom: 10px;
+}
+
+.count {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 48px;
+    color: #ffffff;
+    text-shadow: 0 0 15px #00d4ff, 0 0 30px #00d4ff;
+}
+
+.count.flash {
+    animation: flash 0.4s ease-out;
+}
+
+@keyframes flash {
+    0% { color: #ff0000; text-shadow: 0 0 30px #ff0000; transform: scale(1.2); }
+    100% { color: #ffffff; text-shadow: 0 0 15px #00d4ff; transform: scale(1); }
+}
+
+.empty-state {
+    color: #666;
+    font-size: 20px;
+    text-align: center;
+}
+
+#status {
+    position: absolute;
+    bottom: 5px;
+    left: 5px;
+    font-size: 10px;
+    color: #444;
+    font-family: monospace;
+}
