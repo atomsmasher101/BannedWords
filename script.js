@@ -64,27 +64,11 @@ function connect() {
     console.log('[Banned Words] Connecting...');
     log('Connecting...');
     
-    // Use protocol to send initial message
-    const wsUrl = 'ws://localhost:8080';
-    console.log('[Banned Words] Creating WebSocket to', wsUrl);
-    
-    const ws = new WebSocket(wsUrl);
+    const ws = new WebSocket('ws://localhost:8080');
     
     ws.onopen = () => {
-        console.log('[Banned Words] OPEN - sending subscribe');
+        console.log('[Banned Words] OPEN');
         log('Connected');
-        
-        // Send subscribe immediately
-        try {
-            ws.send(JSON.stringify({
-                request: "Subscribe",
-                id: "banned-words-sub",
-                events: { "": ["*"] }
-            }));
-            console.log('[Banned Words] Subscribe sent');
-        } catch(e) {
-            console.log('[Banned Words] Send error:', e.message);
-        }
     };
 
     ws.onmessage = (event) => {
@@ -92,12 +76,24 @@ function connect() {
         try {
             const data = JSON.parse(event.data);
             
-            if (data.type === 'start' && data.words) handleStart(data.words);
-            else if (data.type === 'increment' && data.word) handleIncrement(data.word, data.count || 1);
-            else if (data.type === 'end') handleEnd(data.results);
-            else console.log('[Banned Words] Unknown:', data.request || data.type);
+            // Handle broadcast messages from CPH.WebsocketBroadcastJson
+            // These are sent directly, not through the event system
+            if (data.type === 'start' && data.words) {
+                handleStart(data.words);
+            } else if (data.type === 'increment' && data.word) {
+                handleIncrement(data.word, data.count || 1);
+            } else if (data.type === 'end') {
+                handleEnd(data.results);
+            } else {
+                // Log but ignore other messages (Hello, Subscribe responses, etc)
+                if (data.request === 'Hello') {
+                    console.log('[Banned Words] Connected to Streamer.bot');
+                } else if (data.id === 'banned-words-sub') {
+                    console.log('[Banned Words] Subscribe response:', data.status);
+                }
+            }
         } catch (e) {
-            console.log('[Banned Words] Parse error');
+            console.log('[Banned Words] Not JSON');
         }
     };
 
@@ -116,6 +112,5 @@ function connect() {
     };
 }
 
-// Try connect immediately on script load
 console.log('[Banned Words] INIT');
 connect();
