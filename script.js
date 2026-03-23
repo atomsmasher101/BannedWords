@@ -1,9 +1,10 @@
 const words = {};
 let reconnectAttempts = 0;
 const MAX_RECONNECT_ATTEMPTS = 10;
+let ws = null;
 
 function log(msg) {
-    console.log('[Banned Words Overlay]', msg);
+    console.log('[Banned Words]', msg);
     const el = document.getElementById('status');
     if (el) el.textContent = msg;
 }
@@ -14,7 +15,7 @@ function renderWords() {
     
     const wordEntries = Object.entries(words);
     if (wordEntries.length === 0) {
-        container.innerHTML = '<div class="empty-state">Waiting for challenge to start...</div>';
+        container.innerHTML = '<div class="empty-state">Waiting for challenge...</div>';
         return;
     }
     container.innerHTML = wordEntries.map(([word, count]) => `
@@ -60,45 +61,58 @@ function handleStart(wordsList) {
     log(`Started: ${wordsList.join(', ')}`);
 }
 
+function handleMessage(data) {
+    console.log('[Banned Words] Handling:', data);
+    
+    if (data.type === 'start' && data.words) {
+        handleStart(data.words);
+    } else if (data.type === 'increment' && data.word) {
+        handleIncrement(data.word, data.count || 1);
+    } else if (data.type === 'end') {
+        handleEnd(data.results);
+    } else {
+        console.log('[Banned Words] Unknown type:', data.type);
+    }
+}
+
 function connect() {
     console.log('[Banned Words] Connecting...');
     log('Connecting...');
     
-    const ws = new WebSocket('ws://localhost:8080');
+    ws = new WebSocket('ws://localhost:8080');
     
     ws.onopen = () => {
-        console.log('[Banned Words] OPEN');
+        console.log('[Banned Words] Connected');
         log('Connected');
     };
 
     ws.onmessage = (event) => {
-        console.log('[Banned Words] <<<', event.data);
+        console.log('[Banned Words] Raw:', event.data);
+        
+        // Try to parse as JSON
         try {
             const data = JSON.parse(event.data);
             
-            // Handle broadcast messages from CPH.WebsocketBroadcastJson
-            // These are sent directly, not through the event system
-            if (data.type === 'start' && data.words) {
-                handleStart(data.words);
-            } else if (data.type === 'increment' && data.word) {
-                handleIncrement(data.word, data.count || 1);
-            } else if (data.type === 'end') {
-                handleEnd(data.results);
-            } else {
-                // Log but ignore other messages (Hello, Subscribe responses, etc)
-                if (data.request === 'Hello') {
-                    console.log('[Banned Words] Connected to Streamer.bot');
-                } else if (data.id === 'banned-words-sub') {
-                    console.log('[Banned Words] Subscribe response:', data.status);
-                }
+            // Handle broadcast (direct JSON from WebsocketBroadcastJson)
+            if (data.type) {
+                handleMessage(data);
             }
         } catch (e) {
-            console.log('[Banned Words] Not JSON');
+            // If it fails, maybe it's multiple JSON objects?
+            // Try splitting by newlines
+            const lines = event.data.split('\n');
+            for (const line of lines) {
+                if (line.trim()) {
+                    try {
+                        const data = JSON.parse(line);
+                        if (data.type) handleMessage(data);
+                    } catch (e2) {}
+                }
+            }
         }
     };
 
     ws.onerror = () => {
-        console.log('[Banned Words] Error');
         log('Error');
     };
 
@@ -110,6 +124,13 @@ function connect() {
             setTimeout(connect, 3000);
         }
     };
+}
+
+// Check URL params on load
+const urlParams = new URLSearchParams(window.location.search);
+if (urlParams.get('type') === 'start' && urlParams.get('words')) {
+    const wordsParam = urlParams.get('words').split(',');
+    handleStart(wordsParam);
 }
 
 console.log('[Banned Words] INIT');
